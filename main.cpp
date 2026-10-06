@@ -6,14 +6,15 @@
 
 int main(int argc, char *argv[]) {
   QGuiApplication app(argc, argv);
+  QGuiApplication::setApplicationName("QuestForth");
+  QGuiApplication::setOrganizationName("QuestForth");
 
   QQmlApplicationEngine engine;
 
-  // Game controller for QML
   GameController controller;
   engine.rootContext()->setContextProperty("gameController", &controller);
 
-  const QUrl url(QStringLiteral("qrc:/game_quest/main.qml"));
+  const QUrl url(QStringLiteral("qrc:/QuestForth/main.qml"));
   QObject::connect(
     &engine, &QQmlApplicationEngine::objectCreated, &app,
     [url](QObject *obj, const QUrl &objUrl) {

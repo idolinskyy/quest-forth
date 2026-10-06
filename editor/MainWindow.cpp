@@ -24,7 +24,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   setupMenus();
   newFile();
   resize(1200, 800);
-  setWindowTitle("Quest Editor — game_quest");
+  setWindowTitle("QuestForth Editor");
 }
 
 void MainWindow::setupUi() {
@@ -119,8 +119,7 @@ void MainWindow::setupMenus() {
   file->addAction("&Quit", QKeySequence::Quit, this, &QWidget::close);
 
   auto *run = menuBar()->addMenu("&Run");
-  run->addAction("Check compile", QKeySequence(Qt::Key_F7), this,
-                 &MainWindow::checkCompile);
+  run->addAction("Check compile", QKeySequence(Qt::Key_F7), this, &MainWindow::checkCompile);
   run->addAction("Start debugging", QKeySequence(Qt::Key_F5), this, &MainWindow::debugStart);
   run->addAction("Continue", QKeySequence(Qt::Key_F5), this, &MainWindow::debugContinue);
   run->addAction("Step", QKeySequence(Qt::Key_F10), this, &MainWindow::debugStep);
@@ -129,8 +128,8 @@ void MainWindow::setupMenus() {
 
   auto *help = menuBar()->addMenu("&Help");
   help->addAction("About", this, [this] {
-    QMessageBox::information(this, "Quest Editor",
-                             "Standalone editor for game_quest scripts.\n\n"
+    QMessageBox::information(this, "QuestForth Editor",
+                             "Standalone editor for QuestForth scripts.\n\n"
                              "• Line numbers and breakpoints (click the gutter)\n"
                              "• Syntax highlighting\n"
                              "• Word autocomplete (Ctrl+Space or while typing)\n"
@@ -151,7 +150,7 @@ void MainWindow::setCurrentPath(const QString &path) {
   setWindowModified(false);
   const QString name =
     path.isEmpty() ? QStringLiteral("untitled.forth") : QFileInfo(path).fileName();
-  setWindowTitle(QStringLiteral("%1[*] — Quest Editor").arg(name));
+  setWindowTitle(QStringLiteral("%1[*] — QuestForth Editor").arg(name));
   m_status->setText(path.isEmpty() ? QStringLiteral("New file") : path);
 }
 

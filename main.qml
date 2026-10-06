@@ -8,7 +8,7 @@ Window {
     width: 800
     height: 580
     visible: true
-    title: gameController && gameController.questTitle.length > 0 ? "Game Quests — " + gameController.questTitle : "Game Quests"
+    title: gameController && gameController.questTitle.length > 0 ? "QuestForth — " + gameController.questTitle : "QuestForth"
     color: "#181a1f"
 
     readonly property color clrSurface: "#21252b"

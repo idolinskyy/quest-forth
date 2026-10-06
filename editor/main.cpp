@@ -5,8 +5,8 @@
 
 int main(int argc, char *argv[]) {
   QApplication app(argc, argv);
-  QApplication::setApplicationName("quest_editor");
-  QApplication::setOrganizationName("game_quest");
+  QApplication::setApplicationName("QuestForthEditor");
+  QApplication::setOrganizationName("QuestForth");
   app.setStyle(QStyleFactory::create("Fusion"));
 
   QPalette dark;

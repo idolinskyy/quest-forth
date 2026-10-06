@@ -4,7 +4,7 @@
 \
 
 "Обідна перерва" TITLE:
-"Ігрові квести" AUTHOR:
+"QuestForth" AUTHOR:
 "1.0" VERSION:
 
 120 "money" !            \ гривень у гаманці

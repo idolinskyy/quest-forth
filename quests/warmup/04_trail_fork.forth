@@ -3,7 +3,7 @@
 \
 
 "Розвилка на перевалі" TITLE:
-"Ігрові квести" AUTHOR:
+"QuestForth" AUTHOR:
 "1.0" VERSION:
 
 0 "has_map" !

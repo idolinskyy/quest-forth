@@ -1,0 +1,13 @@
+# Third-party notices for QuestForth
+
+This product includes third-party materials. The application itself is licensed
+under the GNU General Public License v3 (see LICENSE). The components below
+retain their own licenses.
+
+## System / build dependencies (not vendored in this tree)
+
+- Qt 6 — The Qt Company Ltd., https://www.qt.io/
+  Used as a dynamically linked library (LGPL v3 / GPL v3 / commercial, depending
+  on your Qt build). License texts ship with the Qt installation.
+- Catch2 v3 — https://github.com/catchorg/Catch2 (BSL-1.0), fetched by CMake
+  for unit tests only

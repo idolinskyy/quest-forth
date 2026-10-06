@@ -3,7 +3,7 @@
 \
 
 "Остання електричка" TITLE:
-"Ігрові квести" AUTHOR:
+"QuestForth" AUTHOR:
 "1.0" VERSION:
 
 SCENE: hall

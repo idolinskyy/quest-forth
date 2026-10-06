@@ -4,7 +4,7 @@
 \
 
 "Станція «Аврора»" TITLE:
-"Ігрові квести" AUTHOR:
+"QuestForth" AUTHOR:
 "1.0" VERSION:
 
 0 "gen_ok" !

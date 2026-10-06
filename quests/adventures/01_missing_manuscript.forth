@@ -5,7 +5,7 @@
 \
 
 "Справа про зниклий рукопис" TITLE:
-"Ігрові квести" AUTHOR:
+"QuestForth" AUTHOR:
 "1.0" VERSION:
 
 0 "talked_archivist" !

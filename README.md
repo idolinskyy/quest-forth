@@ -1,11 +1,17 @@
-# game_quest
+# QuestForth
 
-Interactive text quests powered by a small Forth-like scripting language, a Qt 6 player, and a desktop quest editor.
+[![C++23](https://img.shields.io/badge/C%2B%2B-23-blue.svg)](https://isocpp.org/)
+[![Qt6](https://img.shields.io/badge/Qt-6.2%2B-green.svg)](https://www.qt.io/)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Tests](https://img.shields.io/badge/Catch2-tests-success.svg)](tests/)
 
-**License:** GNU GPL v3 or later (see [`LICENSE`](LICENSE)).  
+Interactive text quests powered by a small Forth-like scripting language, a Qt 6
+player, and a desktop quest editor.
+
 **Language reference:** [`LANGUAGE.md`](LANGUAGE.md)
 
-Sample quests under `quests/` are written in Ukrainian; the engine, docs, and tools use English.
+Sample quests under `quests/` are written in Ukrainian; the engine, docs, and
+tools use English.
 
 ## Features
 
@@ -34,20 +40,20 @@ cmake --build build -j
 
 Targets:
 
-| Binary            | Role                                  |
-| ----------------- | ------------------------------------- |
-| `appgame_quest`   | Quest player (Qt Quick)               |
-| `quest_editor`    | Script editor / debugger (Qt Widgets) |
-| `test_engine`     | Unit tests                            |
-| `validate_quests` | Compile-check quest files             |
+| Binary             | Role                                  |
+| ------------------ | ------------------------------------- |
+| `QuestForth`       | Quest player (Qt Quick)               |
+| `QuestForthEditor` | Script editor / debugger (Qt Widgets) |
+| `test_engine`      | Unit tests                            |
+| `validate_quests`  | Compile-check quest files             |
 
 Without Qt, engine tests and `validate_quests` still build.
 
 ## Run
 
 ```bash
-./build/appgame_quest
-./build/quest_editor quests/warmup/01_lost_badge.forth
+./build/QuestForth
+./build/QuestForthEditor quests/warmup/01_lost_badge.forth
 ./build/test_engine
 ./build/validate_quests quests
 ```
@@ -68,8 +74,16 @@ LANGUAGE.md                              language spec
 
 - Keep engine comments and docs in English.
 - Do not add CI auto-deploy workflows unless agreed.
-- Quest content may stay in the author’s language; leave existing `quests/*.forth` stories intact unless intentionally rewriting them.
+- Quest content may stay in the author’s language; leave existing `quests/*.forth`
+  stories intact unless intentionally rewriting them.
 
-## Copyright
+## License
+
+GNU GPL v3 — see [LICENSE](LICENSE).
 
 Copyright (C) 2026 Ihor Dolinskyi
+
+QuestForth uses [Qt](https://www.qt.io/). Qt is a trademark of The Qt Company
+Ltd. and is available under LGPLv3, GPLv3, and commercial licenses. See
+[Qt licensing](https://www.qt.io/licensing/).
+Third-party build dependencies (Catch2) — [NOTICE](NOTICE).

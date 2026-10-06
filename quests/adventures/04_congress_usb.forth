@@ -4,7 +4,7 @@
 \
 
 "Конгрес у «Глобусі»" TITLE:
-"Ігрові квести" AUTHOR:
+"QuestForth" AUTHOR:
 "1.0" VERSION:
 
 0 "badge_ok" !

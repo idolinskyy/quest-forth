@@ -83,7 +83,7 @@ private:
   Compiler m_compiler;
   QString m_logText;
   QStringList m_inventory;
-  QString m_questTitle = "Game Quests";
+  QString m_questTitle = "QuestForth";
   QString m_questAuthor;
   QString m_questVersion;
   QString m_currentLocation = "Game start";

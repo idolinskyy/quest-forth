@@ -1,6 +1,6 @@
 # Sample quests
 
-Ship-with-engine scenarios for the game_quest player.
+Ship-with-engine scenarios for the QuestForth player.
 
 | Folder        | Role                               |
 | ------------- | ---------------------------------- |

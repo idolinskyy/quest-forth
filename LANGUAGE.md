@@ -1,6 +1,6 @@
-# game_quest scripting language
+# QuestForth scripting language
 
-Full language reference for the _Game Quests_ engine (`game_quest`).
+Full language reference for the **QuestForth** engine.
 You can write a valid `.forth` quest from this document alone.
 
 - File extensions: `.forth`, `.fth`, `.txt`
@@ -43,14 +43,14 @@ Tokens are separated by spaces, tabs, or newlines.
 
 Double-quoted. Escape sequences:
 
-| Escape | Meaning |
-| ------ | ------- |
-| `\n`   | newline |
-| `\t`   | tab |
-| `\r`   | carriage return |
-| `\\`   | backslash |
+| Escape | Meaning             |
+| ------ | ------------------- |
+| `\n`   | newline             |
+| `\t`   | tab                 |
+| `\r`   | carriage return     |
+| `\\`   | backslash           |
 | `\"`   | quote inside string |
-| `\0`   | NUL byte |
+| `\0`   | NUL byte            |
 
 Unknown escapes or an unclosed quote are compile errors.
 You can also print multiple paragraphs with separate `.` calls.
@@ -117,35 +117,35 @@ SCENE: path_a
 
 ## 4. Stack words
 
-| Word | Stack | Notes |
-| ---- | ----- | ----- |
-| integer / real | — → n | literal |
-| `"…"` | — → s | string literal (with escapes) |
-| `+` | a b → a+b | numbers **or** string concat |
-| `-` `*` `/` | a b → … | numbers only; `/0` errors |
-| `MOD` | a b → a%b | integers only |
-| `dup` `drop` `swap` | … | stack ops |
-| `.` | a → | print to the **event log** |
+| Word                | Stack     | Notes                         |
+| ------------------- | --------- | ----------------------------- |
+| integer / real      | — → n     | literal                       |
+| `"…"`               | — → s     | string literal (with escapes) |
+| `+`                 | a b → a+b | numbers **or** string concat  |
+| `-` `*` `/`         | a b → …   | numbers only; `/0` errors     |
+| `MOD`               | a b → a%b | integers only                 |
+| `dup` `drop` `swap` | …         | stack ops                     |
+| `.`                 | a →       | print to the **event log**    |
 
 ---
 
 ## 5. Variables
 
-| Word | Stack | Notes |
-| ---- | ----- | ----- |
-| `!` | value name → | store: `42 "hp" !` |
-| `@` | name → value | fetch; missing → `0` |
+| Word | Stack        | Notes                |
+| ---- | ------------ | -------------------- |
+| `!`  | value name → | store: `42 "hp" !`   |
+| `@`  | name → value | fetch; missing → `0` |
 
 ---
 
 ## 6. Inventory
 
-| Word | Stack | Notes |
-| ---- | ----- | ----- |
-| `ITEM+` | count name → | add items |
-| `ITEM-` | count name → | remove; drops the entry at 0 |
-| `ITEM?` | name → count | count (0 if absent) |
-| `.INVENTORY` | — | print inventory |
+| Word         | Stack        | Notes                        |
+| ------------ | ------------ | ---------------------------- |
+| `ITEM+`      | count name → | add items                    |
+| `ITEM-`      | count name → | remove; drops the entry at 0 |
+| `ITEM?`      | name → count | count (0 if absent)          |
+| `.INVENTORY` | —            | print inventory              |
 
 `count ≤ 0` is ignored for `ITEM+` / `ITEM-`.
 
@@ -155,11 +155,11 @@ SCENE: path_a
 
 Results are `1` / `0`.
 
-| Word | Notes |
-| ---- | ----- |
-| `=` | equality (numbers with coercion; strings; deep array/object) |
-| `>` `<` `>=` `<=` | numbers |
-| `AND` `OR` `NOT` | truthy values |
+| Word              | Notes                                                        |
+| ----------------- | ------------------------------------------------------------ |
+| `=`               | equality (numbers with coercion; strings; deep array/object) |
+| `>` `<` `>=` `<=` | numbers                                                      |
+| `AND` `OR` `NOT`  | truthy values                                                |
 
 **Truthy:** non-zero number/real, non-empty string, non-empty array/object.
 
@@ -230,10 +230,10 @@ Hub pattern: `dup 1 = IF drop GOTO: a THEN` …
 
 ## 12. Choices
 
-| Word | Stack | Notes |
-| ---- | ----- | ----- |
-| `CHOICE` | text → | add button |
-| `WAIT_CHOICE` | — | show buttons and **pause** |
+| Word          | Stack  | Notes                      |
+| ------------- | ------ | -------------------------- |
+| `CHOICE`      | text → | add button                 |
+| `WAIT_CHOICE` | —      | show buttons and **pause** |
 
 After a click, the 1-based index is on the stack.
 `WAIT_CHOICE` with no `CHOICE` is an error.
@@ -242,21 +242,21 @@ After a click, the 1-based index is on the stack.
 
 ## 13. Metadata and UI
 
-| Word | Effect |
-| ---- | ------ |
+| Word                          | Effect          |
+| ----------------------------- | --------------- |
 | `TITLE:` `AUTHOR:` `VERSION:` | window / status |
-| `LOCATION:` | location badge |
-| `CLS` | clear event log |
+| `LOCATION:`                   | location badge  |
+| `CLS`                         | clear event log |
 
 ---
 
 ## 14. Endings
 
-| Word | Notes |
-| ---- | ----- |
+| Word                 | Notes                         |
+| -------------------- | ----------------------------- |
 | `VICTORY` / `FINISH` | win; message shown in overlay |
-| `DEFEAT` | lose |
-| `HALT` | stop without win/lose overlay |
+| `DEFEAT`             | lose                          |
+| `HALT`               | stop without win/lose overlay |
 
 ---
 
@@ -289,13 +289,13 @@ Files live under `saves/` (AppData in the GUI), extension `.gqsave`.
 
 ## 18. Canvas: `CANVAS.*`
 
-| Word | Stack | Notes |
-| ---- | ----- | ----- |
-| `CANVAS.CLEAR` | — | clear |
-| `CANVAS.COLOR` | r g b → | 0–255 |
-| `CANVAS.RECT` | x y w h → | filled rect |
-| `CANVAS.LINE` | x1 y1 x2 y2 → | line |
-| `CANVAS.TEXT` | x y text → | text |
+| Word           | Stack         | Notes       |
+| -------------- | ------------- | ----------- |
+| `CANVAS.CLEAR` | —             | clear       |
+| `CANVAS.COLOR` | r g b →       | 0–255       |
+| `CANVAS.RECT`  | x y w h →     | filled rect |
+| `CANVAS.LINE`  | x1 y1 x2 y2 → | line        |
+| `CANVAS.TEXT`  | x y text →    | text        |
 
 No audio in the language.
 
@@ -308,22 +308,22 @@ mutations via `APPEND` / `[]!` / `{}!` are shared.
 
 ### Arrays
 
-| Word | Stack | Notes |
-| ---- | ----- | ----- |
-| `ARRAY` | v1…vn n → arr | build (bottom → index 0) |
-| `LEN` | arr → n | also works on objects/strings |
-| `[]@` / `[]!` | arr i [v] | 0-based; out of range errors |
-| `APPEND` | arr v → | push back |
-| `[]POP` | arr → v | pop last |
+| Word          | Stack         | Notes                         |
+| ------------- | ------------- | ----------------------------- |
+| `ARRAY`       | v1…vn n → arr | build (bottom → index 0)      |
+| `LEN`         | arr → n       | also works on objects/strings |
+| `[]@` / `[]!` | arr i [v]     | 0-based; out of range errors  |
+| `APPEND`      | arr v →       | push back                     |
+| `[]POP`       | arr → v       | pop last                      |
 
 ### Objects
 
-| Word | Stack | Notes |
-| ---- | ----- | ----- |
-| `OBJECT` | k1 v1 … kn vn n → obj | n pairs |
-| `{}@` | obj key → v | missing → `0` |
-| `{}!` | obj key v → | set field |
-| `HAS?` / `DEL` / `KEYS` | … | key ops |
+| Word                    | Stack                 | Notes         |
+| ----------------------- | --------------------- | ------------- |
+| `OBJECT`                | k1 v1 … kn vn n → obj | n pairs       |
+| `{}@`                   | obj key → v           | missing → `0` |
+| `{}!`                   | obj key v →           | set field     |
+| `HAS?` / `DEL` / `KEYS` | …                     | key ops       |
 
 `=` compares arrays/objects by deep value. Empty array/object is falsy.
 `SAVE`/`LOAD` persist nested structures.
@@ -354,7 +354,7 @@ There are no `[…]` / `{…}` literals — only `ARRAY` / `OBJECT`.
 ```bash
 ./build/validate_quests path/to/script.forth
 ./build/validate_quests quests
-./build/quest_editor quests/warmup/01_lost_badge.forth
+./build/QuestForthEditor quests/warmup/01_lost_badge.forth
 ```
 
 See `editor/README.md`.
@@ -441,4 +441,4 @@ Anything else is a user word or an “Unknown word” error.
 
 ---
 
-_This document matches the game_quest engine (Compiler + VM + words). Update it whenever the language changes._
+_This document matches the QuestForth engine (Compiler + VM + words). Update it whenever the language changes._

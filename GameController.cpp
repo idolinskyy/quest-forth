@@ -192,8 +192,8 @@ QString GameController::readTitleFromScript(const QString &path) {
 
 QString GameController::findQuestsRoot() const {
   QStringList candidates;
-#ifdef GAME_QUESTS_DIR
-  candidates << QString::fromUtf8(GAME_QUESTS_DIR);
+#ifdef QUESTFORTH_QUESTS_DIR
+  candidates << QString::fromUtf8(QUESTFORTH_QUESTS_DIR);
 #endif
   const QString appDir = QCoreApplication::applicationDirPath();
   candidates << appDir + "/quests";
@@ -298,7 +298,7 @@ void GameController::returnToMainMenu() {
   resetVmState();
   m_rawScript.clear();
   m_questLoaded = false;
-  m_questTitle = "Game Quests";
+  m_questTitle = "QuestForth";
   m_questAuthor.clear();
   m_questVersion.clear();
   m_currentLocation.clear();

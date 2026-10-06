@@ -1,6 +1,6 @@
-# Quest editor (`quest_editor`)
+# QuestForth Editor (`QuestForthEditor`)
 
-Standalone Qt Widgets app for writing and debugging `game_quest` `.forth` scripts.
+Standalone Qt Widgets app for writing and debugging QuestForth `.forth` scripts.
 
 ## Build
 
@@ -8,12 +8,12 @@ Standalone Qt Widgets app for writing and debugging `game_quest` `.forth` script
 cmake -S .. -B ../build \
   -DCMAKE_PREFIX_PATH="$HOME/Qt/6.x.x/gcc_64" \
   -DCMAKE_BUILD_TYPE=Debug
-cmake --build ../build -j --target quest_editor
-../build/quest_editor
-../build/quest_editor ../quests/warmup/01_lost_badge.forth
+cmake --build ../build -j --target QuestForthEditor
+../build/QuestForthEditor
+../build/QuestForthEditor ../quests/warmup/01_lost_badge.forth
 ```
 
-Needs `Qt6::Widgets` and `quest_engine`.
+Needs `Qt6::Widgets` and `questforth_engine`.
 
 ## Features
 

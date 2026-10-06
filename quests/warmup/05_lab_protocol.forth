@@ -4,7 +4,7 @@
 \
 
 "Протокол безпеки" TITLE:
-"Ігрові квести" AUTHOR:
+"QuestForth" AUTHOR:
 "1.0" VERSION:
 
 0 "gloves" !

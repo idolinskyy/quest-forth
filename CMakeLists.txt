@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(
-  game_quest
+  QuestForth
   VERSION 0.1
   LANGUAGES CXX)
 
@@ -15,8 +15,8 @@ set(ENGINE_SOURCES
     words.cpp
     compiler.cpp)
 
-add_library(quest_engine STATIC ${ENGINE_SOURCES})
-target_include_directories(quest_engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+add_library(questforth_engine STATIC ${ENGINE_SOURCES})
+target_include_directories(questforth_engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # --- Engine unit tests (no Qt) ---
 enable_testing()
@@ -29,34 +29,38 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 add_executable(test_engine tests/test_engine.cpp)
-target_link_libraries(test_engine PRIVATE quest_engine Catch2::Catch2WithMain)
+target_link_libraries(test_engine PRIVATE questforth_engine Catch2::Catch2WithMain)
 add_test(NAME engine COMMAND test_engine)
 
 add_executable(validate_quests tools/validate_quests.cpp)
-target_link_libraries(validate_quests PRIVATE quest_engine)
+target_link_libraries(validate_quests PRIVATE questforth_engine)
 
 # --- Qt GUI apps (optional if Qt6 is installed) ---
 find_package(Qt6 6.2 COMPONENTS Quick Widgets QUIET)
 if(Qt6_FOUND)
   set(CMAKE_AUTOMOC ON)
   set(CMAKE_AUTORCC ON)
+  # Keep QML module trees under build/qml/ so they do not clash with binary names.
+  set(QT_QML_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/qml")
 
   # --- Quest player (Quick) ---
   if(TARGET Qt6::Quick)
-    qt_add_executable(appgame_quest main.cpp GameController.cpp)
-    target_link_libraries(appgame_quest PRIVATE quest_engine Qt6::Quick)
-    target_compile_definitions(appgame_quest PRIVATE GAME_QUESTS_DIR="${CMAKE_SOURCE_DIR}/quests")
+    qt_add_executable(questforth_app main.cpp GameController.cpp)
+    target_link_libraries(questforth_app PRIVATE questforth_engine Qt6::Quick)
+    target_compile_definitions(questforth_app
+                               PRIVATE QUESTFORTH_QUESTS_DIR="${CMAKE_SOURCE_DIR}/quests")
+    set_target_properties(questforth_app PROPERTIES OUTPUT_NAME QuestForth)
 
     add_custom_command(
-      TARGET appgame_quest
+      TARGET questforth_app
       POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/quests"
-              "$<TARGET_FILE_DIR:appgame_quest>/quests")
+              "$<TARGET_FILE_DIR:questforth_app>/quests")
 
     qt_add_qml_module(
-      appgame_quest
+      questforth_app
       URI
-      game_quest
+      QuestForth
       VERSION
       1.0
       QML_FILES
@@ -69,7 +73,7 @@ if(Qt6_FOUND)
       GameController.h)
 
     set_target_properties(
-      appgame_quest
+      questforth_app
       PROPERTIES MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
                  MACOSX_BUNDLE_SHORT_VERSION_STRING
                  ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
@@ -78,7 +82,7 @@ if(Qt6_FOUND)
 
     include(GNUInstallDirs)
     install(
-      TARGETS appgame_quest
+      TARGETS questforth_app
       BUNDLE DESTINATION .
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
   endif()
@@ -95,10 +99,11 @@ if(Qt6_FOUND)
         editor/CodeEditor.h
         editor/ForthHighlighter.h
         editor/WordDictionary.h)
-    qt_add_executable(quest_editor ${EDITOR_SOURCES})
-    target_link_libraries(quest_editor PRIVATE quest_engine Qt6::Widgets)
-    target_include_directories(quest_editor PRIVATE ${CMAKE_SOURCE_DIR}/editor)
-    set_target_properties(quest_editor PROPERTIES WIN32_EXECUTABLE TRUE)
+    qt_add_executable(questforth_editor ${EDITOR_SOURCES})
+    target_link_libraries(questforth_editor PRIVATE questforth_engine Qt6::Widgets)
+    target_include_directories(questforth_editor PRIVATE ${CMAKE_SOURCE_DIR}/editor)
+    set_target_properties(
+      questforth_editor PROPERTIES OUTPUT_NAME QuestForthEditor WIN32_EXECUTABLE TRUE)
   endif()
 else()
   message(WARNING "Qt6 not found — building engine tests only")
