@@ -1,0 +1,12 @@
+# Stub Qt headers for clangd when system Qt6 is not installed.
+# Real builds still use find_package(Qt6).
+# Both -isystem paths: compile_commands uses Directory=build/, fallback uses project root.
+
+CompileFlags:
+  Add:
+    - -std=c++23
+    - -I.
+    - -isystem
+    - .clangd-stubs/qt
+    - -isystem
+    - ../.clangd-stubs/qt
