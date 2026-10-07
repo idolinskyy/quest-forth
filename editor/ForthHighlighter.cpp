@@ -2,20 +2,20 @@
 #include "WordDictionary.h"
 
 ForthHighlighter::ForthHighlighter(QTextDocument *parent) : QSyntaxHighlighter(parent) {
-  m_comment.setForeground(QColor("#7a7f8a"));
+  m_comment.setForeground(QColor("#5c6370"));
   m_comment.setFontItalic(true);
 
-  m_string.setForeground(QColor("#98c379"));
+  m_string.setForeground(QColor("#8fbf7a"));
 
-  m_number.setForeground(QColor("#d19a66"));
+  m_number.setForeground(QColor("#d0a06a"));
 
-  m_keyword.setForeground(QColor("#c678dd"));
-  m_keyword.setFontWeight(QFont::Bold);
+  m_keyword.setForeground(QColor("#6cb2e3"));
+  m_keyword.setFontWeight(QFont::DemiBold);
 
-  m_scene.setForeground(QColor("#61afef"));
+  m_scene.setForeground(QColor("#c9a227"));
   m_scene.setFontWeight(QFont::Bold);
 
-  m_def.setForeground(QColor("#e5c07b"));
+  m_def.setForeground(QColor("#e0c070"));
   m_def.setFontWeight(QFont::Bold);
 }
 

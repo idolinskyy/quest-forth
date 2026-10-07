@@ -2,10 +2,12 @@
 #include "CodeEditor.h"
 #include "ForthHighlighter.h"
 
+#include <QApplication>
 #include <QCloseEvent>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFont>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidget>
@@ -14,56 +16,99 @@
 #include <QSplitter>
 #include <QStatusBar>
 #include <QStringConverter>
+#include <QStyle>
 #include <QTextStream>
 #include <QToolBar>
 #include <QVBoxLayout>
 #include <QWidget>
 
+namespace {
+QFont appMono(const char *prop, int fallbackPt) {
+  const QVariant v = qApp->property(prop);
+  if (v.canConvert<QFont>())
+    return v.value<QFont>();
+  QFont f(QStringLiteral("monospace"), fallbackPt);
+  f.setStyleHint(QFont::Monospace);
+  return f;
+}
+} // namespace
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   setupUi();
   setupMenus();
   newFile();
-  resize(1200, 800);
+  resize(1280, 840);
   setWindowTitle("QuestForth Editor");
 }
 
 void MainWindow::setupUi() {
   auto *central = new QWidget(this);
   auto *root = new QHBoxLayout(central);
-  root->setContentsMargins(4, 4, 4, 4);
+  root->setContentsMargins(8, 8, 8, 8);
+  root->setSpacing(0);
 
   auto *splitter = new QSplitter(Qt::Horizontal, central);
+  splitter->setChildrenCollapsible(false);
 
-  m_editor = new CodeEditor(splitter);
+  auto *editorPane = new QWidget(splitter);
+  auto *editorLayout = new QVBoxLayout(editorPane);
+  editorLayout->setContentsMargins(0, 0, 4, 0);
+  editorLayout->setSpacing(6);
+
+  auto *editorTitle = new QLabel("Source", editorPane);
+  editorTitle->setObjectName("panelTitle");
+  editorLayout->addWidget(editorTitle);
+
+  m_editor = new CodeEditor(editorPane);
   new ForthHighlighter(m_editor->document());
   connect(m_editor, &CodeEditor::textChanged, this, &MainWindow::markDirty);
+  editorLayout->addWidget(m_editor, 1);
 
   auto *right = new QWidget(splitter);
   auto *rv = new QVBoxLayout(right);
-  rv->setContentsMargins(0, 0, 0, 0);
+  rv->setContentsMargins(4, 0, 0, 0);
+  rv->setSpacing(8);
 
-  m_debugStatus = new QLabel("Debug: off", right);
+  m_debugStatus = new QLabel("Debug idle — F5 to start, click gutter for breakpoints", right);
+  m_debugStatus->setObjectName("debugBanner");
+  m_debugStatus->setProperty("active", false);
   rv->addWidget(m_debugStatus);
 
   auto *dbgSplit = new QSplitter(Qt::Vertical, right);
+  dbgSplit->setChildrenCollapsible(false);
 
-  m_output = new QPlainTextEdit(dbgSplit);
+  auto *outPane = new QWidget(dbgSplit);
+  auto *outLayout = new QVBoxLayout(outPane);
+  outLayout->setContentsMargins(0, 0, 0, 0);
+  outLayout->setSpacing(4);
+  auto *outTitle = new QLabel("Output", outPane);
+  outTitle->setObjectName("panelTitle");
+  outLayout->addWidget(outTitle);
+  m_output = new QPlainTextEdit(outPane);
   m_output->setReadOnly(true);
-  m_output->setPlaceholderText("Log / output …");
-  m_output->setFont(QFont("JetBrains Mono", 10));
+  m_output->setPlaceholderText("Compile and debug output appears here…");
+  m_output->setFont(appMono("monoFontSmall", 10));
+  outLayout->addWidget(m_output, 1);
 
   auto *inspect = new QWidget(dbgSplit);
   auto *ih = new QHBoxLayout(inspect);
   ih->setContentsMargins(0, 0, 0, 0);
+  ih->setSpacing(8);
 
-  auto makeList = [](const QString &title, QWidget *parent) {
+  const QFont listFont = appMono("monoFontSmall", 9);
+
+  auto makeList = [&listFont](const QString &title, QWidget *parent) {
     auto *box = new QWidget(parent);
     auto *v = new QVBoxLayout(box);
     v->setContentsMargins(0, 0, 0, 0);
-    v->addWidget(new QLabel(title, box));
+    v->setSpacing(4);
+    auto *label = new QLabel(title, box);
+    label->setObjectName("panelTitle");
+    v->addWidget(label);
     auto *list = new QListWidget(box);
-    list->setFont(QFont("JetBrains Mono", 9));
-    v->addWidget(list);
+    list->setFont(listFont);
+    list->setAlternatingRowColors(true);
+    v->addWidget(list, 1);
     return std::pair{box, list};
   };
 
@@ -73,40 +118,46 @@ void MainWindow::setupUi() {
   m_varsView = varsList;
   auto [invBox, invList] = makeList("Inventory", inspect);
   m_invView = invList;
-  auto [chBox, chList] = makeList("Choices (double-click to answer)", inspect);
+  auto [chBox, chList] = makeList("Choices", inspect);
   m_choicesView = chList;
+  m_choicesView->setToolTip("Double-click a choice to answer WAIT_CHOICE");
   connect(m_choicesView, &QListWidget::itemDoubleClicked, this,
           [this](QListWidgetItem *item) { makeDebugChoice(m_choicesView->row(item)); });
 
-  ih->addWidget(stackBox);
-  ih->addWidget(varsBox);
-  ih->addWidget(invBox);
-  ih->addWidget(chBox);
+  ih->addWidget(stackBox, 1);
+  ih->addWidget(varsBox, 1);
+  ih->addWidget(invBox, 1);
+  ih->addWidget(chBox, 1);
 
-  dbgSplit->addWidget(m_output);
+  dbgSplit->addWidget(outPane);
   dbgSplit->addWidget(inspect);
   dbgSplit->setStretchFactor(0, 2);
   dbgSplit->setStretchFactor(1, 3);
-  rv->addWidget(dbgSplit);
+  rv->addWidget(dbgSplit, 1);
 
-  splitter->addWidget(m_editor);
+  splitter->addWidget(editorPane);
   splitter->addWidget(right);
   splitter->setStretchFactor(0, 3);
   splitter->setStretchFactor(1, 2);
+  splitter->setSizes({720, 480});
 
   root->addWidget(splitter);
   setCentralWidget(central);
 
   m_status = new QLabel(this);
   statusBar()->addWidget(m_status, 1);
+  statusBar()->addPermanentWidget(new QLabel("QuestForth Editor", this));
 
   auto *tb = addToolBar("Debug");
-  tb->addAction("▶ Start", this, &MainWindow::debugStart);
-  tb->addAction("⏭ Continue", this, &MainWindow::debugContinue);
-  tb->addAction("↓ Step", this, &MainWindow::debugStep);
-  tb->addAction("■ Stop", this, &MainWindow::debugStop);
+  tb->setMovable(false);
+  tb->setFloatable(false);
+  tb->setIconSize(QSize(16, 16));
+  tb->addAction("Start", this, &MainWindow::debugStart)->setToolTip("Start debugging (F5)");
+  tb->addAction("Continue", this, &MainWindow::debugContinue)->setToolTip("Continue (F5)");
+  tb->addAction("Step", this, &MainWindow::debugStep)->setToolTip("Step (F10)");
+  tb->addAction("Stop", this, &MainWindow::debugStop)->setToolTip("Stop (Shift+F5)");
   tb->addSeparator();
-  tb->addAction("✓ Check", this, &MainWindow::checkCompile);
+  tb->addAction("Check", this, &MainWindow::checkCompile)->setToolTip("Check compile (F7)");
 }
 
 void MainWindow::setupMenus() {
@@ -285,7 +336,11 @@ bool MainWindow::prepareSession(bool resetVm) {
 void MainWindow::setDebugUiActive(bool active) {
   m_debugging = active;
   m_editor->setReadOnly(active);
-  m_debugStatus->setText(active ? "Debug: on" : "Debug: off");
+  m_debugStatus->setText(active ? "Debugging — F10 step · F5 continue · Shift+F5 stop"
+                                : "Debug idle — F5 to start, click gutter for breakpoints");
+  m_debugStatus->setProperty("active", active);
+  m_debugStatus->style()->unpolish(m_debugStatus);
+  m_debugStatus->style()->polish(m_debugStatus);
 }
 
 void MainWindow::refreshDebugViews() {

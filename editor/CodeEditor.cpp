@@ -4,6 +4,7 @@
 #include <QAbstractItemView>
 #include <QApplication>
 #include <QCompleter>
+#include <QFrame>
 #include <QHelpEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
@@ -23,15 +24,38 @@ CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent) {
   updateLineNumberAreaWidth(0);
   highlightCurrentLine();
 
-  setFont(QFont("JetBrains Mono", 11));
+  QFont mono = qApp->property("monoFont").value<QFont>();
+  if (mono.family().isEmpty()) {
+    mono = QFont(QStringLiteral("monospace"), 11);
+    mono.setStyleHint(QFont::Monospace);
+  }
+  setFont(mono);
   setTabStopDistance(fontMetrics().horizontalAdvance(QLatin1Char(' ')) * 4);
+  setLineWrapMode(QPlainTextEdit::NoWrap);
   setMouseTracking(true);
+  setFrameShape(QFrame::NoFrame);
+
+  QPalette pal = palette();
+  pal.setColor(QPalette::Base, QColor("#161920"));
+  pal.setColor(QPalette::Text, QColor("#d8dce6"));
+  pal.setColor(QPalette::Highlight, QColor("#2a4060"));
+  pal.setColor(QPalette::HighlightedText, Qt::white);
+  setPalette(pal);
 
   m_completer = new QCompleter(WordDictionary::instance().allWords(), this);
   m_completer->setWidget(this);
   m_completer->setCompletionMode(QCompleter::PopupCompletion);
   m_completer->setCaseSensitivity(Qt::CaseSensitive);
   m_completer->setFilterMode(Qt::MatchStartsWith);
+  if (auto *popup = m_completer->popup()) {
+    popup->setFont(mono);
+    popup->setStyleSheet(
+      QStringLiteral("QAbstractItemView {"
+                     "  background: #1a1d26; color: #d8dce6;"
+                     "  border: 1px solid #2e3440; selection-background-color: #2a4060;"
+                     "  outline: none; padding: 2px;"
+                     "}"));
+  }
   connect(m_completer, QOverload<const QString &>::of(&QCompleter::activated), this,
           &CodeEditor::insertCompletion);
 }
@@ -70,7 +94,7 @@ void CodeEditor::highlightCurrentLine() {
 
   if (!isReadOnly()) {
     QTextEdit::ExtraSelection sel;
-    sel.format.setBackground(QColor("#2c313a"));
+    sel.format.setBackground(QColor("#1e2430"));
     sel.format.setProperty(QTextFormat::FullWidthSelection, true);
     sel.cursor = textCursor();
     sel.cursor.clearSelection();
@@ -81,7 +105,7 @@ void CodeEditor::highlightCurrentLine() {
     QTextBlock block = document()->findBlockByNumber(m_debugLine - 1);
     if (block.isValid()) {
       QTextEdit::ExtraSelection dbg;
-      dbg.format.setBackground(QColor("#3e4452"));
+      dbg.format.setBackground(QColor("#2a3420"));
       dbg.format.setProperty(QTextFormat::FullWidthSelection, true);
       dbg.cursor = QTextCursor(block);
       dbg.cursor.clearSelection();
@@ -94,7 +118,9 @@ void CodeEditor::highlightCurrentLine() {
 
 void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent *event) {
   QPainter painter(m_lineNumberArea);
-  painter.fillRect(event->rect(), QColor("#21252b"));
+  painter.fillRect(event->rect(), QColor("#12141a"));
+  painter.setPen(QColor("#252a35"));
+  painter.drawLine(event->rect().topRight(), event->rect().bottomRight());
 
   QTextBlock block = firstVisibleBlock();
   int blockNumber = block.blockNumber();
@@ -106,19 +132,19 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent *event) {
       const int line = blockNumber + 1;
       if (m_breakpoints.contains(line)) {
         painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor("#e06c75"));
-        painter.drawEllipse(4, top + 4, 10, 10);
+        painter.setBrush(QColor("#d16b6b"));
+        painter.drawEllipse(5, top + 5, 8, 8);
       }
       if (m_debugLine == line) {
         painter.setPen(Qt::NoPen);
-        painter.setBrush(QColor("#e5c07b"));
+        painter.setBrush(QColor("#c9a227"));
         QPolygon tri;
         tri << QPoint(16, top + 4) << QPoint(16, top + 14) << QPoint(22, top + 9);
         painter.drawPolygon(tri);
       }
-      painter.setPen(QColor("#5c6370"));
-      painter.drawText(0, top, m_lineNumberArea->width() - 4, fontMetrics().height(),
-                       Qt::AlignRight, QString::number(line));
+      painter.setPen(m_debugLine == line ? QColor("#c9a227") : QColor("#4a5160"));
+      painter.drawText(0, top, m_lineNumberArea->width() - 6, fontMetrics().height(),
+                       Qt::AlignRight | Qt::AlignVCenter, QString::number(line));
     }
     block = block.next();
     top = bottom;
