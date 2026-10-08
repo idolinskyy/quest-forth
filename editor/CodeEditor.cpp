@@ -4,6 +4,7 @@
 #include <QAbstractItemView>
 #include <QApplication>
 #include <QCompleter>
+#include <QFontInfo>
 #include <QFrame>
 #include <QHelpEvent>
 #include <QKeyEvent>
@@ -24,12 +25,26 @@ CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent) {
   updateLineNumberAreaWidth(0);
   highlightCurrentLine();
 
+  setObjectName(QStringLiteral("codeEditor"));
   QFont mono = qApp->property("monoFont").value<QFont>();
-  if (mono.family().isEmpty()) {
-    mono = QFont(QStringLiteral("monospace"), 11);
+  if (mono.family().isEmpty() || !QFontInfo(mono).fixedPitch()) {
+    mono = QFont(QStringLiteral("monospace"), 12);
     mono.setStyleHint(QFont::Monospace);
   }
+  mono.setPointSize(12);
+  mono.setFixedPitch(true);
   setFont(mono);
+  // Stylesheet must set size — global QWidget/QPlainTextEdit rules otherwise win.
+  setStyleSheet(QStringLiteral("QPlainTextEdit#codeEditor {"
+                               "  font-family: \"%1\", \"DejaVu Sans Mono\", \"Noto Sans Mono\","
+                               "               \"Liberation Mono\", \"Courier New\", monospace;"
+                               "  font-size: 12pt;"
+                               "  background-color: #161920;"
+                               "  color: #d8dce6;"
+                               "  border: none;"
+                               "  selection-background-color: #2a4060;"
+                               "}")
+                  .arg(mono.family()));
   setTabStopDistance(fontMetrics().horizontalAdvance(QLatin1Char(' ')) * 4);
   setLineWrapMode(QPlainTextEdit::NoWrap);
   setMouseTracking(true);

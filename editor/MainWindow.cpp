@@ -2,25 +2,41 @@
 #include "CodeEditor.h"
 #include "ForthHighlighter.h"
 
+#include "words.h"
+
 #include <QApplication>
 #include <QCloseEvent>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFont>
+#include <QFontDatabase>
+#include <QFontInfo>
 #include <QHBoxLayout>
+#include <QHelpEvent>
 #include <QLabel>
 #include <QListWidget>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QMouseEvent>
+#include <QPlainTextEdit>
+#include <QPushButton>
 #include <QSplitter>
 #include <QStatusBar>
 #include <QStringConverter>
 #include <QStyle>
+#include <QTextBlock>
+#include <QTextCursor>
 #include <QTextStream>
 #include <QToolBar>
+#include <QToolTip>
 #include <QVBoxLayout>
 #include <QWidget>
+
+#include <memory>
+#include <vector>
 
 namespace {
 QFont appMono(const char *prop, int fallbackPt) {
@@ -158,6 +174,8 @@ void MainWindow::setupUi() {
   tb->addAction("Stop", this, &MainWindow::debugStop)->setToolTip("Stop (Shift+F5)");
   tb->addSeparator();
   tb->addAction("Check", this, &MainWindow::checkCompile)->setToolTip("Check compile (F7)");
+  tb->addAction("Bytecode", this, &MainWindow::showBytecode)
+    ->setToolTip("Show compiled bytecode (F8)");
 }
 
 void MainWindow::setupMenus() {
@@ -171,6 +189,8 @@ void MainWindow::setupMenus() {
 
   auto *run = menuBar()->addMenu("&Run");
   run->addAction("Check compile", QKeySequence(Qt::Key_F7), this, &MainWindow::checkCompile);
+  run->addAction("Show bytecode…", QKeySequence(Qt::Key_F8), this, &MainWindow::showBytecode);
+  run->addSeparator();
   run->addAction("Start debugging", QKeySequence(Qt::Key_F5), this, &MainWindow::debugStart);
   run->addAction("Continue", QKeySequence(Qt::Key_F5), this, &MainWindow::debugContinue);
   run->addAction("Step", QKeySequence(Qt::Key_F10), this, &MainWindow::debugStep);
@@ -185,7 +205,8 @@ void MainWindow::setupMenus() {
                              "• Syntax highlighting\n"
                              "• Word autocomplete (Ctrl+Space or while typing)\n"
                              "• Hover help for words\n"
-                             "• Debugging: F5 start/continue, F10 step, stack/vars/choices\n\n"
+                             "• Debugging: F5 start/continue, F10 step, stack/vars/choices\n"
+                             "• Bytecode view: F8\n\n"
                              "Full language spec: LANGUAGE.md");
   });
 }
@@ -309,6 +330,135 @@ void MainWindow::checkCompile() {
     m_status->setText("Compile error");
     QMessageBox::warning(this, "Compile", e.what());
   }
+}
+
+void MainWindow::showBytecode() {
+  VM probe;
+  Compiler c;
+  try {
+    c.compile(m_editor->toPlainText().toStdString(), probe);
+  } catch (const std::exception &e) {
+    m_output->appendPlainText(QStringLiteral("[FAIL] %1").arg(e.what()));
+    m_status->setText("Compile error");
+    QMessageBox::warning(this, "Bytecode", e.what());
+    return;
+  }
+
+  const auto lines = disassemble_vm_lines(probe);
+  QString listing;
+  listing.reserve(static_cast<int>(probe.code.size()) * 48);
+  auto tooltips = std::make_shared<std::vector<QString>>();
+  tooltips->reserve(lines.size());
+  for (size_t i = 0; i < lines.size(); ++i) {
+    if (i)
+      listing += QLatin1Char('\n');
+    listing += QString::fromStdString(lines[i].text);
+    tooltips->push_back(QString::fromStdString(lines[i].tooltip));
+  }
+
+  m_output->appendPlainText(QStringLiteral("[OK] Bytecode: %1 cells, %2 scenes — opened in viewer")
+                              .arg(probe.code.size())
+                              .arg(probe.scenes.size()));
+  m_status->setText(QStringLiteral("Bytecode: %1 cells").arg(probe.code.size()));
+
+  auto *dlg = new QDialog(this);
+  dlg->setAttribute(Qt::WA_DeleteOnClose);
+  dlg->setWindowTitle(QStringLiteral("Compiled bytecode — %1 cells").arg(probe.code.size()));
+  dlg->resize(1100, 720);
+
+  auto *layout = new QVBoxLayout(dlg);
+  auto *hint =
+    new QLabel(QStringLiteral("Disassembly of the current editor buffer. "
+                              "BRANCH / 0BRANCH / CALL / LOOP targets are absolute cell indices. "
+                              "Hover a truncated operand to see the full value."),
+               dlg);
+  hint->setWordWrap(true);
+  hint->setObjectName("panelTitle");
+  layout->addWidget(hint);
+
+  auto *view = new QPlainTextEdit(dlg);
+  view->setObjectName(QStringLiteral("bytecodeView"));
+  view->setReadOnly(true);
+  view->setLineWrapMode(QPlainTextEdit::NoWrap);
+  view->setMouseTracking(true);
+  view->viewport()->setMouseTracking(true);
+
+  // Stylesheet must force mono — global QWidget rule otherwise wins over setFont().
+  QFont mono = qApp->property("monoFont").value<QFont>();
+  if (mono.family().isEmpty() || !QFontInfo(mono).fixedPitch()) {
+    mono = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    mono.setStyleHint(QFont::Monospace);
+    mono.setFixedPitch(true);
+  }
+  mono.setPointSize(12);
+  mono.setFixedPitch(true);
+  view->setFont(mono);
+  view->setStyleSheet(
+    QStringLiteral("QPlainTextEdit#bytecodeView {"
+                   "  font-family: \"%1\", \"DejaVu Sans Mono\", \"Noto Sans Mono\","
+                   "               \"Liberation Mono\", \"Courier New\", monospace;"
+                   "  font-size: 12pt;"
+                   "  background-color: #161920;"
+                   "  color: #d8dce6;"
+                   "  border: 1px solid #252a35;"
+                   "  border-radius: 6px;"
+                   "  selection-background-color: #2a4060;"
+                   "}")
+      .arg(mono.family()));
+  view->setPlainText(listing);
+  layout->addWidget(view, 1);
+
+  // Hover truncated operands → full text in tooltip
+  class TipFilter : public QObject {
+  public:
+    TipFilter(QPlainTextEdit *edit, std::shared_ptr<std::vector<QString>> tips, QObject *parent)
+        : QObject(parent), m_edit(edit), m_tips(std::move(tips)) {}
+
+  protected:
+    bool eventFilter(QObject *obj, QEvent *event) override {
+      if (obj == m_edit->viewport() &&
+          (event->type() == QEvent::MouseMove || event->type() == QEvent::ToolTip)) {
+        QPoint pos;
+        if (event->type() == QEvent::MouseMove)
+          pos = static_cast<QMouseEvent *>(event)->pos();
+        else
+          pos = static_cast<QHelpEvent *>(event)->pos();
+
+        const QTextCursor cursor = m_edit->cursorForPosition(pos);
+        const int block = cursor.blockNumber();
+        if (block >= 0 && block < static_cast<int>(m_tips->size()) &&
+            !(*m_tips)[static_cast<size_t>(block)].isEmpty()) {
+          const QString &tip = (*m_tips)[static_cast<size_t>(block)];
+          QToolTip::showText(m_edit->viewport()->mapToGlobal(pos) + QPoint(12, 16), tip, m_edit);
+          if (event->type() == QEvent::ToolTip)
+            return true;
+        } else {
+          QToolTip::hideText();
+        }
+      }
+      return QObject::eventFilter(obj, event);
+    }
+
+  private:
+    QPlainTextEdit *m_edit;
+    std::shared_ptr<std::vector<QString>> m_tips;
+  };
+
+  view->viewport()->installEventFilter(new TipFilter(view, tooltips, view));
+
+  auto *buttons = new QDialogButtonBox(dlg);
+  auto *copyBtn = buttons->addButton(QStringLiteral("Copy all"), QDialogButtonBox::ActionRole);
+  buttons->addButton(QDialogButtonBox::Close);
+  connect(copyBtn, &QPushButton::clicked, this, [view] {
+    view->selectAll();
+    view->copy();
+    view->moveCursor(QTextCursor::Start);
+  });
+  connect(buttons, &QDialogButtonBox::rejected, dlg, &QDialog::reject);
+  connect(buttons, &QDialogButtonBox::accepted, dlg, &QDialog::accept);
+  layout->addWidget(buttons);
+
+  dlg->show();
 }
 
 bool MainWindow::prepareSession(bool resetVm) {

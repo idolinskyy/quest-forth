@@ -27,6 +27,7 @@ private slots:
   void saveFile();
   void saveFileAs();
   void checkCompile();
+  void showBytecode();
   void debugStart();
   void debugContinue();
   void debugStep();

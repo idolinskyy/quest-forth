@@ -117,6 +117,9 @@ QPlainTextEdit, QTextEdit {
   selection-background-color: #2a4060;
   selection-color: #ffffff;
   padding: 4px;
+  font-family: "JetBrains Mono", "Cascadia Code", "Fira Code", "DejaVu Sans Mono",
+               "Noto Sans Mono", "Liberation Mono", "Courier New", monospace;
+  font-size: 12pt;
 }
 QListWidget {
   background-color: #161920;
@@ -125,6 +128,9 @@ QListWidget {
   border-radius: 6px;
   outline: none;
   padding: 2px;
+  font-family: "JetBrains Mono", "Cascadia Code", "Fira Code", "DejaVu Sans Mono",
+               "Noto Sans Mono", "Liberation Mono", "Courier New", monospace;
+  font-size: 11pt;
 }
 QListWidget::item {
   padding: 5px 8px;
@@ -218,8 +224,8 @@ int main(int argc, char *argv[]) {
   app.setStyleSheet(QString::fromUtf8(kStyleSheet));
 
   // Expose mono font via application property for widgets that need it
-  app.setProperty("monoFont", pickMonoFont(11));
-  app.setProperty("monoFontSmall", pickMonoFont(10));
+  app.setProperty("monoFont", pickMonoFont(12));
+  app.setProperty("monoFontSmall", pickMonoFont(11));
 
   MainWindow w;
   w.show();

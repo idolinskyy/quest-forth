@@ -1,11 +1,16 @@
 #include "words.h"
 
+#include <cstdio>
+#include <iomanip>
+#include <map>
 #include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <variant>
+#include <vector>
 
 namespace {
 
@@ -628,4 +633,219 @@ void register_words(std::unordered_map<std::string, Primitive> &dictionary) {
   dictionary["VICTORY"] = word_victory;
   dictionary["DEFEAT"] = word_defeat;
   dictionary["FINISH"] = word_victory;
+}
+
+namespace {
+
+const std::unordered_map<Primitive, std::string> &primitive_names() {
+  static const std::unordered_map<Primitive, std::string> names = [] {
+    std::unordered_map<Primitive, std::string> m;
+    std::unordered_map<std::string, Primitive> dict;
+    register_words(dict);
+    // Prefer Forth spellings; first registration wins for shared pointers.
+    for (const auto &[k, v] : dict) {
+      if (!m.count(v))
+        m.emplace(v, k);
+    }
+    // Compiler-internal opcodes (not in the user dictionary)
+    m[word_lit_int] = "LIT_INT";
+    m[word_lit_real] = "LIT_REAL";
+    m[word_lit_str] = "LIT_STR";
+    m[word_branch_if_zero] = "0BRANCH";
+    m[word_branch] = "BRANCH";
+    m[word_call] = "CALL";
+    m[word_return] = "RETURN";
+    m[word_do] = "DO";
+    m[word_loop] = "LOOP";
+    m[word_set_scene] = "SET_SCENE";
+    m[word_goto] = "GOTO";
+    m[word_scene_end_trap] = "SCENE_END";
+    return m;
+  }();
+  return names;
+}
+
+bool opcode_takes_operand(const std::string &name) {
+  return name == "LIT_INT" || name == "LIT_REAL" || name == "LIT_STR" || name == "0BRANCH" ||
+         name == "BRANCH" || name == "CALL" || name == "LOOP" || name == "SET_SCENE" ||
+         name == "GOTO" || name == "SCENE_END";
+}
+
+std::string format_operand(const Cell &cell) {
+  if (std::holds_alternative<Number>(cell))
+    return std::to_string(std::get<Number>(cell));
+  if (std::holds_alternative<Real>(cell)) {
+    std::ostringstream os;
+    os << std::get<Real>(cell);
+    return os.str();
+  }
+  if (std::holds_alternative<String>(cell)) {
+    std::string s = std::get<String>(cell);
+    std::string out = "\"";
+    for (char c : s) {
+      if (c == '\\' || c == '"')
+        out.push_back('\\');
+      if (c == '\n') {
+        out += "\\n";
+        continue;
+      }
+      if (c == '\t') {
+        out += "\\t";
+        continue;
+      }
+      out.push_back(c);
+    }
+    out.push_back('"');
+    return out;
+  }
+  return "<primitive?>";
+}
+
+} // namespace
+
+std::string primitive_name(Primitive p) {
+  const auto &names = primitive_names();
+  if (auto it = names.find(p); it != names.end())
+    return it->second;
+  char buf[64];
+  std::snprintf(buf, sizeof(buf), "PRIM@%p", reinterpret_cast<void *>(p));
+  return buf;
+}
+
+namespace {
+
+size_t utf8_codepoints(const std::string &s) {
+  size_t n = 0;
+  for (unsigned char c : s) {
+    if ((c & 0xc0) != 0x80)
+      ++n;
+  }
+  return n;
+}
+
+std::string utf8_prefix(const std::string &s, size_t max_chars) {
+  size_t n = 0;
+  size_t i = 0;
+  while (i < s.size() && n < max_chars) {
+    const unsigned char c = static_cast<unsigned char>(s[i]);
+    size_t cp = 1;
+    if ((c & 0x80) == 0)
+      cp = 1;
+    else if ((c & 0xe0) == 0xc0)
+      cp = 2;
+    else if ((c & 0xf0) == 0xe0)
+      cp = 3;
+    else if ((c & 0xf8) == 0xf0)
+      cp = 4;
+    if (i + cp > s.size())
+      break;
+    i += cp;
+    ++n;
+  }
+  return s.substr(0, i);
+}
+
+/// Fit to exactly `width` display columns (UTF-8 code points); truncate with … if needed.
+std::string fit_column(const std::string &s, int width) {
+  if (width <= 0)
+    return {};
+  const size_t len = utf8_codepoints(s);
+  if (static_cast<int>(len) <= width)
+    return s + std::string(static_cast<size_t>(width - static_cast<int>(len)), ' ');
+  if (width == 1)
+    return "…";
+  return utf8_prefix(s, static_cast<size_t>(width - 1)) + "…";
+}
+
+std::string pad_right_ascii(const std::string &s, int width) {
+  if (static_cast<int>(s.size()) >= width)
+    return s;
+  return std::string(static_cast<size_t>(width - static_cast<int>(s.size())), ' ') + s;
+}
+
+} // namespace
+
+std::vector<DisassemblyLine> disassemble_vm_lines(const VM &vm) {
+  // Fixed columns (monospace, UTF-8 code-point width):
+  //   AAAAA  OPCODE________  OPERAND______________________________  ; line N
+  constexpr int kAddrW = 5;
+  constexpr int kOpcodeW = 12;
+  constexpr int kOperandW = 48;
+
+  auto make_row = [&](size_t addr, const std::string &opcode, const std::string &operand,
+                      int src_line) -> DisassemblyLine {
+    DisassemblyLine row;
+    const bool truncated = utf8_codepoints(operand) > static_cast<size_t>(kOperandW);
+    row.text = pad_right_ascii(std::to_string(addr), kAddrW) + "  " + fit_column(opcode, kOpcodeW) +
+               "  " + fit_column(operand, kOperandW);
+    if (src_line > 0)
+      row.text += "  ; line " + std::to_string(src_line);
+    if (truncated)
+      row.tooltip = operand;
+    return row;
+  };
+
+  std::vector<DisassemblyLine> lines;
+
+  {
+    std::string header = "; QuestForth bytecode — " + std::to_string(vm.code.size()) + " cells";
+    if (!vm.scenes.empty())
+      header += ", " + std::to_string(vm.scenes.size()) + " scenes";
+    lines.push_back({header, {}});
+  }
+  lines.push_back({"; " + pad_right_ascii("addr", kAddrW) + "  " + fit_column("opcode", kOpcodeW) +
+                     "  " + fit_column("operand", kOperandW) + "  comment",
+                   {}});
+
+  if (!vm.scenes.empty()) {
+    lines.push_back({"; --- scenes ---", {}});
+    std::map<size_t, std::string> by_addr;
+    for (const auto &[name, addr] : vm.scenes)
+      by_addr[addr] = name;
+    for (const auto &[addr, name] : by_addr)
+      lines.push_back({";   SCENE " + name + " @ " + std::to_string(addr), {}});
+    lines.push_back({"; --------------", {}});
+  }
+
+  std::unordered_map<size_t, std::string> scene_at;
+  for (const auto &[name, addr] : vm.scenes)
+    scene_at[addr] = name;
+
+  size_t i = 0;
+  while (i < vm.code.size()) {
+    if (auto sit = scene_at.find(i); sit != scene_at.end())
+      lines.push_back({"; >>> SCENE: " + sit->second, {}});
+
+    const int src_line = (i < vm.code_line.size()) ? vm.code_line[i] : 0;
+
+    if (!std::holds_alternative<Primitive>(vm.code[i])) {
+      lines.push_back(make_row(i, "???", format_operand(vm.code[i]), src_line));
+      ++i;
+      continue;
+    }
+
+    const Primitive prim = std::get<Primitive>(vm.code[i]);
+    const std::string name = primitive_name(prim);
+
+    if (opcode_takes_operand(name) && i + 1 < vm.code.size()) {
+      lines.push_back(make_row(i, name, format_operand(vm.code[i + 1]), src_line));
+      i += 2;
+    } else {
+      lines.push_back(make_row(i, name, "", src_line));
+      ++i;
+    }
+  }
+
+  return lines;
+}
+
+std::string disassemble_vm(const VM &vm) {
+  const auto lines = disassemble_vm_lines(vm);
+  std::ostringstream out;
+  for (size_t i = 0; i < lines.size(); ++i) {
+    if (i)
+      out << '\n';
+    out << lines[i].text;
+  }
+  return out.str();
 }
